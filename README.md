@@ -45,12 +45,13 @@ python TikTokBot.py
 Suivez les instructions à l'écran pour entrer le lien YouTube souhaité.
 
 ## Structure du projet
-bash
-Copier le code
+
+```bash
 TikTokBot/
 │
 ├── TikTokBot.py          # Script principal
 └── README.md             # Ce fichier README
+```
 
 ## Auteurs
 Lucas Bruyère
