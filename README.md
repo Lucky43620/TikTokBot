@@ -21,9 +21,9 @@ Avant d'exécuter le script, assurez-vous d'avoir installé les dépendances sui
 
 Vous pouvez installer les dépendances nécessaires à l'aide de pip :
 
-bash
-Copier le code
+```bash
 pip install yt-dlp moviepy git+https://github.com/openai/whisper.git Pillow
+```
 
 ## Configuration
 1. Police de sous-titres
@@ -38,9 +38,10 @@ Lorsque vous exécutez le script, il vous demande de saisir un lien YouTube. Ass
 ## Exécution du script
 Pour exécuter le script, utilisez la commande suivante dans votre terminal :
 
-bash
-Copier le code
+```bash
 python TikTokBot.py
+```
+
 Suivez les instructions à l'écran pour entrer le lien YouTube souhaité.
 
 ## Structure du projet
