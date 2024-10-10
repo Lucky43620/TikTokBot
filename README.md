@@ -18,12 +18,19 @@ Avant d'exécuter le script, assurez-vous d'avoir installé les dépendances sui
 - moviepy
 - whisper
 - Pillow
+- ImageMagick (pour la manipulation des images et des polices)
 
 Vous pouvez installer les dépendances nécessaires à l'aide de pip :
 
 ```bash
 pip install yt-dlp moviepy git+https://github.com/openai/whisper.git Pillow
 ```
+
+Installation d'ImageMagick
+
+ImageMagick est un logiciel de manipulation d'images qui peut être nécessaire pour le bon fonctionnement des sous-titres générés. Vous pouvez télécharger et installer ImageMagick depuis le site officiel.
+
+Assurez-vous que l'installation inclut les bibliothèques de développement et que le chemin d'accès à ImageMagick est ajouté à votre variable d'environnement PATH pour que moviepy puisse l'utiliser.
 
 ## Configuration
 1. Police de sous-titres
