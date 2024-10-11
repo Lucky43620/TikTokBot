@@ -38,16 +38,20 @@ def download_and_split_video(youtube_link, output_dir):
 
 def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/Arial.ttf"):
     clips = []
-    # Charger la police
     font = ImageFont.truetype(font_path, 50)
 
-    # Temps du segment
     segment_duration = segment.duration
     
-    for i, segment_text in enumerate(transcript['segments']):
+    if 'segments' not in transcript or not transcript['segments']:
+        print("Aucun segment de transcription trouvé.")
+        return segment  # Retourner le segment d'origine s'il n'y a pas de transcription
+
+    last_end_time = 0
+
+    for segment_text in transcript['segments']:
         start_time = segment_text['start']
         end_time = segment_text['end']
-        
+
         # Vérifier que le texte est dans la plage de temps du segment
         if start_time >= segment_duration:
             break
@@ -55,22 +59,33 @@ def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/
         # Ajuster les timings pour qu'ils soient relatifs au segment
         if end_time > segment_duration:
             end_time = segment_duration
-        
+
+        # S'assurer qu'il n'y a pas de superposition
+        if start_time < last_end_time:
+            start_time = last_end_time  # Déplacer le start_time si superposition
+
         # Créer le texte avec un effet d'apparition progressive
         words = segment_text['text'].split()
-        
-        # Au lieu de créer un TextClip pour chaque mot, groupons par phrases ou un nombre de mots
         chunk_size = 3  # Nombre de mots par clip
+        
         for j in range(0, len(words), chunk_size):
             chunk = ' '.join(words[j:j + chunk_size])
             word_start_time = start_time + (j // chunk_size) * ((end_time - start_time) / math.ceil(len(words) / chunk_size))
             word_end_time = word_start_time + ((end_time - start_time) / math.ceil(len(words) / chunk_size))
-            
-            # Créer un TextClip pour le chunk
-            text_clip = TextClip(chunk, fontsize=50, font="Arial", color='white')
-            text_clip = text_clip.set_position(("center", 50)).set_start(word_start_time).set_end(word_end_time)
-            
-            clips.append(text_clip)
+
+            # Ne pas créer un clip si les timings sont en dehors du segment
+            if word_end_time <= segment_duration:
+                text_clip = TextClip(chunk, fontsize=50, font="Arial", color='white')
+                text_clip = text_clip.set_position(("center", 50)).set_start(word_start_time).set_end(word_end_time)
+                clips.append(text_clip)
+
+        last_end_time = word_end_time  # Mettre à jour le dernier end_time
+
+    # Si des sous-titres n'ont pas été créés, afficher un sous-titre par défaut
+    if not clips:
+        text_clip = TextClip("Aucun sous-titre disponible", fontsize=50, font="Arial", color='white')
+        text_clip = text_clip.set_position(("center", 50)).set_duration(segment_duration)
+        clips.append(text_clip)
 
     # Combiner les clips de sous-titres avec la vidéo
     final_clip = CompositeVideoClip([segment] + clips)
@@ -95,24 +110,20 @@ def main():
     print("Modèle Whisper chargé.")
     
     for i, segment in enumerate(segments):
-        print(f"Traitement du segment {i + 1}...")
-        
+        print(f"Traitement du segment {i+1}...")
+
         # Exporter l'audio du segment vers un fichier temporaire
         audio_temp_path = os.path.join(output_dir, f"temp_audio_{i}.wav")
         segment.audio.write_audiofile(audio_temp_path, codec='pcm_s16le')  # Exporter en WAV
 
-        # Charger l'audio temporaire avec Whisper
-        audio = whisper.load_audio(audio_temp_path)
-        audio = whisper.pad_or_trim(audio)  # S'assurer que l'audio est bien dimensionné
-
-        # Transcrire l'audio du segment
-        result = model.transcribe(audio)
+        # Transcrire tout l'audio du segment sans découpage
+        result = model.transcribe(audio_temp_path, language="fr", fp16=False)  # Utiliser une transcription complète
 
         # Générer des sous-titres dynamiques
         final_clip = generate_dynamic_subtitles(segment, result)
 
         # Réintégrer l'audio du segment d'origine
-        final_clip = final_clip.set_audio(segment.audio)  # Assurez-vous que l'audio est bien attaché
+        final_clip = final_clip.set_audio(segment.audio)
 
         # Exporter le segment avec sous-titres et audio
         final_clip.write_videofile(os.path.join(final_dir, f"segment_{i}_with_subtitles.mp4"), fps=24, audio_codec='aac')
