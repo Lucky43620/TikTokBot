@@ -36,9 +36,14 @@ def download_and_split_video(youtube_link, output_dir):
 
     return clip, segments  # Retourner aussi le clip original
 
-def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/Arial.ttf"):
+def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/comic.ttf"):
     clips = []
-    font = ImageFont.truetype(font_path, 50)
+    
+    # Charger la police
+    font_size = 70  # Taille de la police augmentée
+    color = 'yellow'  # Couleur plus lisible
+    border_color = 'black'  # Couleur de la bordure
+    font = ImageFont.truetype(font_path, font_size)
 
     segment_duration = segment.duration
     
@@ -56,15 +61,12 @@ def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/
         if start_time >= segment_duration:
             break
 
-        # Ajuster les timings pour qu'ils soient relatifs au segment
         if end_time > segment_duration:
             end_time = segment_duration
 
-        # S'assurer qu'il n'y a pas de superposition
         if start_time < last_end_time:
-            start_time = last_end_time  # Déplacer le start_time si superposition
+            start_time = last_end_time
 
-        # Créer le texte avec un effet d'apparition progressive
         words = segment_text['text'].split()
         chunk_size = 3  # Nombre de mots par clip
         
@@ -73,23 +75,25 @@ def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/
             word_start_time = start_time + (j // chunk_size) * ((end_time - start_time) / math.ceil(len(words) / chunk_size))
             word_end_time = word_start_time + ((end_time - start_time) / math.ceil(len(words) / chunk_size))
 
-            # Ne pas créer un clip si les timings sont en dehors du segment
             if word_end_time <= segment_duration:
-                text_clip = TextClip(chunk, fontsize=50, font="Arial", color='white')
-                text_clip = text_clip.set_position(("center", 50)).set_start(word_start_time).set_end(word_end_time)
+                # Créer un TextClip avec un contour
+                text_clip = (TextClip(chunk, fontsize=font_size, font="Comic-Sans-MS", color=color, stroke_color=border_color, stroke_width=2)
+                             .set_position(("center", "bottom"))  # Placer le texte en bas de l'écran
+                             .set_start(word_start_time)
+                             .set_end(word_end_time))
                 clips.append(text_clip)
 
-        last_end_time = word_end_time  # Mettre à jour le dernier end_time
+        last_end_time = word_end_time
 
-    # Si des sous-titres n'ont pas été créés, afficher un sous-titre par défaut
     if not clips:
-        text_clip = TextClip("Aucun sous-titre disponible", fontsize=50, font="Arial", color='white')
-        text_clip = text_clip.set_position(("center", 50)).set_duration(segment_duration)
+        text_clip = TextClip("Aucun sous-titre disponible", fontsize=font_size, font="Comic-Sans-MS", color=color)
+        text_clip = text_clip.set_position(("center", "bottom")).set_duration(segment_duration)
         clips.append(text_clip)
 
     # Combiner les clips de sous-titres avec la vidéo
     final_clip = CompositeVideoClip([segment] + clips)
     return final_clip
+
 
 def main():
     youtube_link = input("Entrez le lien YouTube: ")
