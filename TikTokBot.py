@@ -30,9 +30,9 @@ def download_and_split_video(youtube_link, output_dir):
     segment_duration = 65  # 1min et 5sec
     while start < duration:
         end = min(start + segment_duration, duration)
-        segment = clip.subclip(start, end)
-
+        
         # Mettre au format TikTok (9:16)
+        segment = clip.subclip(start, end)
         width, height = segment.size
         new_height = width * 16 / 9  # Calculer la nouvelle hauteur pour un format 9:16
         if new_height > height:
@@ -49,14 +49,29 @@ def download_and_split_video(youtube_link, output_dir):
 
     return clip, segments  # Retourner aussi le clip original
 
+def calculate_font_size(text, max_width, base_size=50):
+    # Calculer une taille de police basée sur la longueur du texte
+    font = ImageFont.truetype("C:/Windows/Fonts/comic.ttf", base_size)
+    text_bbox = font.getbbox(text)  # Utiliser getbbox pour obtenir les dimensions
+
+    text_width = text_bbox[2] - text_bbox[0]  # largeur du texte
+
+    # Réduire la taille de la police si le texte déborde
+    while text_width > max_width and base_size > 10:
+        base_size -= 2
+        font = ImageFont.truetype("C:/Windows/Fonts/comic.ttf", base_size)
+        text_bbox = font.getbbox(text)
+        text_width = text_bbox[2] - text_bbox[0]
+
+    return base_size
+
 def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/comic.ttf"):
     clips = []
     
-    # Charger la police
-    font_size = 70  # Taille de la police augmentée
+    # Taille de police de base
+    base_font_size = 50  # Taille de police initiale
     color = 'yellow'  # Couleur plus lisible
     border_color = 'black'  # Couleur de la bordure
-    font = ImageFont.truetype(font_path, font_size)
 
     segment_duration = segment.duration
     
@@ -89,6 +104,9 @@ def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/
             word_end_time = word_start_time + ((end_time - start_time) / math.ceil(len(words) / chunk_size))
 
             if word_end_time <= segment_duration:
+                # Calculer la taille de la police en fonction du texte
+                font_size = calculate_font_size(chunk, segment.size[0] * 0.9, base_size=base_font_size)
+                
                 # Créer un TextClip avec un contour
                 text_clip = (TextClip(chunk, fontsize=font_size, font="Comic-Sans-MS", color=color, stroke_color=border_color, stroke_width=2)
                              .set_position(("center", "bottom"))  # Placer le texte en bas de l'écran
@@ -99,7 +117,7 @@ def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/
         last_end_time = word_end_time
 
     if not clips:
-        text_clip = TextClip("Aucun sous-titre disponible", fontsize=font_size, font="Comic-Sans-MS", color=color)
+        text_clip = TextClip("Aucun sous-titre disponible", fontsize=base_font_size, font="Comic-Sans-MS", color=color)
         text_clip = text_clip.set_position(("center", "bottom")).set_duration(segment_duration)
         clips.append(text_clip)
 
