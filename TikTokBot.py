@@ -31,6 +31,19 @@ def download_and_split_video(youtube_link, output_dir):
     while start < duration:
         end = min(start + segment_duration, duration)
         segment = clip.subclip(start, end)
+
+        # Mettre au format TikTok (9:16)
+        width, height = segment.size
+        new_height = width * 16 / 9  # Calculer la nouvelle hauteur pour un format 9:16
+        if new_height > height:
+            # Si la nouvelle hauteur dépasse l'original, on ajuste
+            new_height = height
+            new_width = height * 9 / 16
+            x_center = (width - new_width) / 2  # Centre horizontal
+            segment = segment.crop(x1=x_center, x2=x_center + new_width, y1=0, y2=new_height)
+        else:
+            segment = segment.resize(newsize=(width, int(new_height)))
+
         segments.append(segment)
         start = end
 
@@ -93,7 +106,6 @@ def generate_dynamic_subtitles(segment, transcript, font_path="C:/Windows/Fonts/
     # Combiner les clips de sous-titres avec la vidéo
     final_clip = CompositeVideoClip([segment] + clips)
     return final_clip
-
 
 def main():
     youtube_link = input("Entrez le lien YouTube: ")
